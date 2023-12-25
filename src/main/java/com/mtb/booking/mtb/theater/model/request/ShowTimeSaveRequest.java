@@ -22,6 +22,7 @@ public class ShowTimeSaveRequest {
 
 	private Long showTimeId;
 
+	@NotNull(message = "Name should be required")
 	private String name;
 
 	@NotNull(message = "Date should be required")

@@ -49,6 +49,7 @@ public class ScreenServiceImpl implements ScreenService {
 				String.format("Theater is not available against theaterId %d", screenSaveRequest.getTheaterId())));
 
 		Screen screen = optional.orElse(new Screen());
+		screen.setScreenId(screenSaveRequest.getScreenId());
 		screen.setName(screenSaveRequest.getName());
 		screen.setThreater(theater);
 
