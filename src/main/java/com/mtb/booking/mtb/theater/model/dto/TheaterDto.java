@@ -1,5 +1,8 @@
 package com.mtb.booking.mtb.theater.model.dto;
 
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.mtb.booking.mtb.master.model.dto.CityDto;
 
 import lombok.AllArgsConstructor;
@@ -15,6 +18,7 @@ import lombok.ToString;
 @Setter
 @Builder
 @ToString
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TheaterDto {
 
 	private Long theaterId;
@@ -26,5 +30,7 @@ public class TheaterDto {
 	private CityDto city;
 
 	private Boolean status;
+
+	private List<ScreenDto> screenDtos;
 
 }

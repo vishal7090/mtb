@@ -1,28 +1,52 @@
 package com.mtb.booking.mtb.theater.service.impl;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.stereotype.Service;
 
 import com.mtb.booking.mtb.master.entity.City;
+import com.mtb.booking.mtb.master.entity.Movie;
 import com.mtb.booking.mtb.master.exception.NoSuchCityException;
+import com.mtb.booking.mtb.master.exception.NoSuchMovieException;
 import com.mtb.booking.mtb.master.mapper.CityMapper;
+import com.mtb.booking.mtb.master.mapper.MovieMapper;
 import com.mtb.booking.mtb.master.model.dto.CityDto;
+import com.mtb.booking.mtb.master.model.dto.MovieDto;
 import com.mtb.booking.mtb.master.repository.CityRepository;
+import com.mtb.booking.mtb.master.repository.MovieRepository;
+import com.mtb.booking.mtb.theater.entity.Screen;
+import com.mtb.booking.mtb.theater.entity.ShowTime;
 import com.mtb.booking.mtb.theater.entity.Theater;
 import com.mtb.booking.mtb.theater.exception.NoSuchTheaterException;
+import com.mtb.booking.mtb.theater.mapper.ScreenMapper;
+import com.mtb.booking.mtb.theater.mapper.ShowTimeMapper;
 import com.mtb.booking.mtb.theater.mapper.TheaterMapper;
+import com.mtb.booking.mtb.theater.model.dto.ScreenDto;
+import com.mtb.booking.mtb.theater.model.dto.ShowTimeDto;
 import com.mtb.booking.mtb.theater.model.dto.TheaterDto;
+import com.mtb.booking.mtb.theater.model.request.ScreenSearchRequest;
+import com.mtb.booking.mtb.theater.model.request.ShowTimeSearchRequest;
+import com.mtb.booking.mtb.theater.model.request.TheaterBrowseRequest;
 import com.mtb.booking.mtb.theater.model.request.TheaterChangeStatusRequest;
 import com.mtb.booking.mtb.theater.model.request.TheaterRequest;
 import com.mtb.booking.mtb.theater.model.request.TheaterSaveRequest;
 import com.mtb.booking.mtb.theater.model.request.TheaterSearchRequest;
 import com.mtb.booking.mtb.theater.model.response.TheaterResponse;
+import com.mtb.booking.mtb.theater.repository.ScreenRepository;
+import com.mtb.booking.mtb.theater.repository.ShowTimeRepository;
 import com.mtb.booking.mtb.theater.repository.TheaterRepository;
 import com.mtb.booking.mtb.theater.service.TheaterService;
+import com.mtb.booking.mtb.theater.specification.ScreenSpecification;
+import com.mtb.booking.mtb.theater.specification.ShowTimeSpecification;
 import com.mtb.booking.mtb.theater.specification.TheaterSpecification;
 
 @Service
@@ -36,6 +60,80 @@ public class TheaterServiceImpl implements TheaterService {
 
 	@Autowired
 	private CityRepository cityRepository;
+
+	@Autowired
+	private ShowTimeRepository showTimeRepository;
+
+	@Autowired
+	private ShowTimeSpecification showTimeSpecification;
+
+	@Autowired
+	private ScreenRepository screenRepository;
+
+	@Autowired
+	private ScreenSpecification screenSpecification;
+
+	@Autowired
+	private MovieRepository movieRepository;
+
+	@Override
+	public TheaterResponse browseTheaters(TheaterBrowseRequest theaterBrowseRequest) {
+
+		TheaterSearchRequest theaterSearchRequest = TheaterSearchRequest.builder()
+				.cityCode(theaterBrowseRequest.getCityCode()).build();
+		Page<Theater> page = theaterRepository.findAll(theaterSpecification.searchTheaters(theaterSearchRequest),
+				theaterSearchRequest.getPageable().getPageRequest());
+
+		Page<TheaterDto> theaterDtos = page.map(theater -> {
+			TheaterDto theaterDto = TheaterMapper.INSTANCE.toTheaterDto(theater);
+			CityDto cityDto = getCityDto(theater.getCityCode());
+			theaterDto.setCity(cityDto);
+
+			ScreenSearchRequest screenSearchRequest = ScreenSearchRequest.builder().theaterId(theater.getTheaterId())
+					.build();
+			// TODO - Use with Pageable with Sort
+			List<Screen> screens = screenRepository.findAll(screenSpecification.searchScreens(screenSearchRequest));
+
+			List<ScreenDto> screenDtos = screens.stream().map(screen -> {
+				ScreenDto screenDto = ScreenMapper.INSTANCE.toScreenDto(screen);
+				List<ShowTimeDto> showTimeDtos = getShowTimes(screen.getScreenId(), theaterBrowseRequest.getDate());
+				screenDto.setShowTimeDtos(showTimeDtos);
+				return screenDto;
+			}).toList();
+
+			theaterDto.setScreenDtos(screenDtos);
+
+			return theaterDto;
+		});
+
+		return TheaterResponse.builder().message("Threater browser data sucessfully").theaterDtos(theaterDtos).build();
+	}
+
+	private List<ShowTimeDto> getShowTimes(Long screenId, Date date) {
+		Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE).withSort(Sort.by(Order.asc("startTime")));
+
+		ShowTimeSearchRequest showTimeSearchRequest = ShowTimeSearchRequest.builder().screenId(screenId).date(date)
+				.build();
+		Page<ShowTime> pageShowTimes = showTimeRepository
+				.findAll(showTimeSpecification.searchShowTimes(showTimeSearchRequest), pageable);
+
+		return pageShowTimes.map(showTime -> {
+			ShowTimeDto showTimeDto = ShowTimeMapper.INSTANCE.toScreenDto(showTime);
+			MovieDto movieDto = getMovieDto(showTime.getMovieId());
+			showTimeDto.setMovie(movieDto);
+			return showTimeDto;
+		}).get().toList();
+	}
+
+	// TODO - Feign Client Call for SAGA
+	private MovieDto getMovieDto(Long movieId) {
+		Optional<Movie> optional = movieRepository.findById(movieId);
+		if (optional.isEmpty()) {
+			throw new NoSuchMovieException(String.format("Movie is not available against movieId %d", movieId));
+		}
+		Movie movie = optional.get();
+		return MovieMapper.INSTANCE.toMovieDto(movie);
+	}
 
 	@Override
 	public TheaterResponse searchTheaters(TheaterSearchRequest theaterSearchRequest) {

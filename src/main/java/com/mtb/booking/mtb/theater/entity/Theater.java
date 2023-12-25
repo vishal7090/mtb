@@ -2,8 +2,10 @@ package com.mtb.booking.mtb.theater.entity;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,6 +33,7 @@ import lombok.ToString;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "FieldHandler" })
 @EntityListeners(value = { AuditingEntityListener.class })
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "theaterId")
 public class Theater {
 
 	@Id

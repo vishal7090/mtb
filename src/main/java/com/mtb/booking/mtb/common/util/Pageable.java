@@ -33,7 +33,7 @@ public class Pageable {
 		if (size == -1) {
 			size = Integer.MAX_VALUE;
 		}
-		PageRequest pageRequest = PageRequest.of(page, page);
+		PageRequest pageRequest = PageRequest.of(page, size);
 
 		// TODO - write order logic
 

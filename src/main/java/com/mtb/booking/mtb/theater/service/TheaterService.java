@@ -1,5 +1,6 @@
 package com.mtb.booking.mtb.theater.service;
 
+import com.mtb.booking.mtb.theater.model.request.TheaterBrowseRequest;
 import com.mtb.booking.mtb.theater.model.request.TheaterChangeStatusRequest;
 import com.mtb.booking.mtb.theater.model.request.TheaterRequest;
 import com.mtb.booking.mtb.theater.model.request.TheaterSaveRequest;
@@ -15,5 +16,7 @@ public interface TheaterService {
 	TheaterResponse saveTheater(TheaterSaveRequest theaterSaveRequest);
 
 	TheaterResponse changeStatusTheater(TheaterChangeStatusRequest theaterChangeStatusRequest);
+
+	TheaterResponse browseTheaters(TheaterBrowseRequest theaterBrowseRequest);
 
 }

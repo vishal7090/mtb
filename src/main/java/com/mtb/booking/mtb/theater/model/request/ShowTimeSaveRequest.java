@@ -38,4 +38,6 @@ public class ShowTimeSaveRequest {
 	private Date endTime;
 
 	private Long screenId;
+
+	private Long movieId;
 }
